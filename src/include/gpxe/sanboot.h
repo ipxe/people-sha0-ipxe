@@ -15,4 +15,6 @@ struct sanboot_protocol {
 
 #define __sanboot_protocol __table_entry ( SANBOOT_PROTOCOLS, 01 )
 
+extern struct setting keep_san_setting;
+
 #endif /* _GPXE_SANBOOT_H */
