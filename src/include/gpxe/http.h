@@ -16,6 +16,7 @@ FILE_LICENCE ( GPL2_OR_LATER );
 #define HTTPS_PORT 443
 
 extern int http_open_filter ( struct xfer_interface *xfer, struct uri *uri,
+			      char *extrahdrs, unsigned long *content_total,
 			      unsigned int default_port,
 			      int ( * filter ) ( struct xfer_interface *,
 						 struct xfer_interface ** ) );

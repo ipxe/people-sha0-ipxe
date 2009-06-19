@@ -68,6 +68,8 @@ struct http_request {
 
 	/** URI being fetched */
 	struct uri *uri;
+	/** Optional extra headers */
+	char *extrahdrs;
 	/** Transport layer interface */
 	struct xfer_interface socket;
 
@@ -78,6 +80,8 @@ struct http_request {
 	unsigned int response;
 	/** HTTP Content-Length */
 	size_t content_length;
+	/** HTTP Total content-length for resource */
+	unsigned long *content_total;
 	/** Received length */
 	size_t rx_len;
 	/** RX state */
@@ -140,6 +144,7 @@ static void http_done ( struct http_request *http, int rc ) {
 static int http_response_to_rc ( unsigned int response ) {
 	switch ( response ) {
 	case 200:
+	case 206:
 	case 301:
 	case 302:
 		return 0;
@@ -207,6 +212,38 @@ static int http_rx_location ( struct http_request *http, const char *value ) {
 }
 
 /**
+ * Handle HTTP Content-Range header
+ *
+ * @v http		HTTP request
+ * @v value		HTTP header value
+ * @ret rc		Return status code
+ *
+ * Extract the total content length for the resource, regardless of
+ * whether or not we've requested only a range of bytes from it.
+ */
+static int http_rx_content_range ( struct http_request *http,
+				    const char *value ) {
+	char *endp;
+
+	/* If we don't have a place to store this, forget it */
+	if ( ! http->content_total )
+		return 0;
+	value = strstr ( value, "/" );
+	if ( ! value )
+		goto range_err;
+	value++;
+	*http->content_total = strtoul ( value, &endp, 10 );
+	if ( *endp != '\0' )
+		goto range_err;
+	return 0;
+
+ range_err:
+	DBGC ( http, "HTTP %p invalid Content-Range \"%s\"\n",
+	       http, value );
+	return -EIO;
+}
+
+/**
  * Handle HTTP Content-Length header
  *
  * @v http		HTTP request
@@ -251,6 +288,10 @@ static struct http_header_handler http_header_handlers[] = {
 	{
 		.header = "Location",
 		.rx = http_rx_location,
+	},
+	{
+		.header = "Content-Range",
+		.rx = http_rx_content_range,
 	},
 	{
 		.header = "Content-Length",
@@ -417,6 +458,7 @@ static int http_socket_deliver_iob ( struct xfer_interface *socket,
 static void http_step ( struct process *process ) {
 	struct http_request *http =
 		container_of ( process, struct http_request, process );
+	const char *extrahdrs = http->extrahdrs;
 	const char *path = http->uri->path;
 	const char *host = http->uri->host;
 	const char *query = http->uri->query;
@@ -461,6 +503,7 @@ static void http_step ( struct process *process ) {
 					  "User-Agent: gPXE/" VERSION "\r\n"
 					  "%s%s%s"
 					  "Host: %s\r\n"
+					  "%s"
 					  "\r\n",
 					  ( path ? path : "/" ),
 					  ( query ? "?" : "" ),
@@ -469,7 +512,9 @@ static void http_step ( struct process *process ) {
 					    "Authorization: Basic " : "" ),
 					  ( user ? user_pw_base64 : "" ),
 					  ( user ? "\r\n" : "" ),
-					  host ) ) != 0 ) {
+					  host,
+					  ( extrahdrs ? extrahdrs :
+					    "" ) ) ) != 0 ) {
 			http_done ( http, rc );
 		}
 	}
@@ -528,15 +573,21 @@ static struct xfer_interface_operations http_xfer_operations = {
 };
 
 /**
- * Initiate an HTTP connection, with optional filter
+ * Initiate an HTTP connection, with optional parameters
  *
  * @v xfer		Data transfer interface
  * @v uri		Uniform Resource Identifier
+ * @v extrahdrs		Extra HTTP headers to include, or NULL
+ * @v content_total	A resource's total length, or NULL
  * @v default_port	Default port number
  * @v filter		Filter to apply to socket, or NULL
  * @ret rc		Return status code
+ *
+ * Optional parameters are: extra headers, a pointer to return the resource's
+ * total length in during processing of a response, a filter
  */
 int http_open_filter ( struct xfer_interface *xfer, struct uri *uri,
+		       char *extrahdrs, unsigned long *content_total,
 		       unsigned int default_port,
 		       int ( * filter ) ( struct xfer_interface *xfer,
 					  struct xfer_interface **next ) ) {
@@ -556,6 +607,17 @@ int http_open_filter ( struct xfer_interface *xfer, struct uri *uri,
 	http->refcnt.free = http_free;
 	xfer_init ( &http->xfer, &http_xfer_operations, &http->refcnt );
        	http->uri = uri_get ( uri );
+	/* Pass along any extra headers */
+	http->extrahdrs = extrahdrs;
+	/**
+	 * TODO: Is this the right strategy, or should we expose http_request
+	 * via http.h and pass back our reference to the caller?
+	 *
+	 * Set the pointer for returning a resource's total length in
+	 * during processing of a response
+	 */
+	http->content_total = content_total;
+	/* Initialize transport interface and process */
 	xfer_init ( &http->socket, &http_socket_operations, &http->refcnt );
 	process_init ( &http->process, http_step, &http->refcnt );
 
@@ -574,6 +636,7 @@ int http_open_filter ( struct xfer_interface *xfer, struct uri *uri,
 
 	/* Attach to parent interface, mortalise self, and return */
 	xfer_plug_plug ( &http->xfer, xfer );
+	DBGC ( &http->xfer, "Plugged %p->%p\n", &http->xfer, xfer );
 	ref_put ( &http->refcnt );
 	return 0;
 
@@ -593,7 +656,7 @@ int http_open_filter ( struct xfer_interface *xfer, struct uri *uri,
  * @ret rc		Return status code
  */
 static int http_open ( struct xfer_interface *xfer, struct uri *uri ) {
-	return http_open_filter ( xfer, uri, HTTP_PORT, NULL );
+	return http_open_filter ( xfer, uri, NULL, NULL, HTTP_PORT, NULL );
 }
 
 /** HTTP URI opener */
