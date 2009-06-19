@@ -142,6 +142,7 @@ FILE_LICENCE ( GPL2_OR_LATER );
 #define ERRFILE_ib_sma			( ERRFILE_NET | 0x00170000 )
 #define ERRFILE_ib_packet		( ERRFILE_NET | 0x00180000 )
 #define ERRFILE_icmp			( ERRFILE_NET | 0x00190000 )
+#define ERRFILE_httpdisk		( ERRFILE_NET | 0x000a0000 )
 
 #define ERRFILE_image		      ( ERRFILE_IMAGE | 0x00000000 )
 #define ERRFILE_elf		      ( ERRFILE_IMAGE | 0x00010000 )
@@ -174,6 +175,7 @@ FILE_LICENCE ( GPL2_OR_LATER );
 #define ERRFILE_pxemenu		      ( ERRFILE_OTHER | 0x00150000 )
 #define ERRFILE_x509		      ( ERRFILE_OTHER | 0x00160000 )
 #define ERRFILE_login_ui	      ( ERRFILE_OTHER | 0x00170000 )
+#define ERRFILE_httpdiskboot	      ( ERRFILE_OTHER | 0x00180000 )
 
 /** @} */
 

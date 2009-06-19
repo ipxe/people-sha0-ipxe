@@ -1,0 +1,4 @@
+#!gpxe
+dhcp net0
+set keep-san 1
+sanboot http://etherboot.org/share/andytim/httpdisk.hdd
