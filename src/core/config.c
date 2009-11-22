@@ -112,6 +112,9 @@ REQUIRE_OBJECT ( aoeboot );
 #ifdef SANBOOT_PROTO_IB_SRP
 REQUIRE_OBJECT ( ib_srpboot );
 #endif
+#ifdef SANBOOT_PROTO_HTTPDISK
+REQUIRE_OBJECT ( httpdiskboot );
+#endif
 
 /*
  * Drag in all requested resolvers
