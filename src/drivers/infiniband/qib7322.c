@@ -641,7 +641,7 @@ static int qib7322_init_send ( struct qib7322 *qib7322 ) {
 	unsigned long baseaddr_largepio;
 	unsigned long baseaddr_vl15_port0;
 	unsigned long baseaddr_vl15_port1;
-	int rc;
+	int rc = -ENOERR;
 
 	/* Create send buffer sets */
 	qib7322_readq ( qib7322, &sendbufbase, QIB_7322_SendBufBase_offset );
@@ -701,7 +701,7 @@ static int qib7322_init_send ( struct qib7322 *qib7322 ) {
 	BIT_FILL_1 ( &sendctrl, SendBufAvailUpd, 1 );
 	qib7322_writeq ( qib7322, &sendctrl, QIB_7322_SendCtrl_offset );
 
-	return 0;
+	return rc;
 
 	free_dma ( qib7322->sendbufavail, sizeof ( *qib7322->sendbufavail ) );
  err_alloc_sendbufavail:
@@ -1665,7 +1665,7 @@ static unsigned int qib7322_link_speed_supported ( struct qib7322 *qib7322,
 						  unsigned int port ) {
 	struct QIB_7322_feature_mask features;
 	struct QIB_7322_Revision revision;
-	unsigned int supported;
+	unsigned int supported = 0;
 	unsigned int boardid;
 
 	/* Read the active feature mask */
