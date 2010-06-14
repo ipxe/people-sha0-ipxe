@@ -653,7 +653,11 @@ int19_entry:
 	call	print_message
 	movw	$int19_message_dots, %si
 	call	print_message
+#ifdef INT19_OPTOUT
 	movw	$0xdf4e, %bx
+#else
+	movw	$0xdf42, %bx
+#endif
 	call	wait_for_key
 	pushf
 	xorw	%di, %di
@@ -661,7 +665,11 @@ int19_entry:
 	movw	$int19_message_done, %si
 	call	print_message
 	popf
+#ifdef INT19_OPTOUT
+	jnz	1f
+#else
 	jz	1f
+#endif
 	/* Leave keypress in buffer and start iPXE.  The keypress will
 	 * cause the usual initial Ctrl-B prompt to be skipped.
 	 */
@@ -681,7 +689,11 @@ orig_int19:
 	.size	orig_int19, . - orig_int19
 
 int19_message_prompt:
+#ifdef INT19_OPTOUT
+	.asciz "Press B to boot from "
+#else
 	.asciz	"Press N to skip booting from "
+#endif
 	.size	int19_message_prompt, . - int19_message_prompt
 int19_message_dots:
 	.asciz	"..."

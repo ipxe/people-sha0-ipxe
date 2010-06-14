@@ -98,6 +98,14 @@ $flag_table = array (
 	   "cfgsec" => "general"
 	   ),
 
+        "INT19_OPTOUT"
+        => array (
+	   "flag" => "INT19_OPTOUT",
+	   "type" => "on/off",
+	   "value" => "off",
+	   "cfgsec" => "general"
+	   ),
+
 	// End Console Options
 
 	// Begin Network Protocol Options:

@@ -32,4 +32,6 @@ FILE_LICENCE ( GPL2_OR_LATER );
 #define	SANBOOT_PROTO_ISCSI	/* iSCSI protocol */
 #define	SANBOOT_PROTO_AOE	/* AoE protocol */
 
+#undef INT19_OPTOUT		/* INT19 BIOS boot-on-keypress-only */
+
 #endif /* CONFIG_DEFAULTS_PCBIOS_H */
